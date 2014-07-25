@@ -4,9 +4,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 
 /*class Pattern{
@@ -46,8 +52,8 @@ public class FPgrowth {
 		
 		//data structure initialization
 		BufferedReader br = null;
-		Hashtable<Integer,Integer> fList =  new Hashtable<Integer,Integer>();
-		Hashtable<Integer,Integer> L1 = new Hashtable<Integer,Integer>();
+		HashMap<Integer,Integer> fList =  new HashMap<Integer,Integer>();
+		HashMap<Integer,Integer> L1 = new HashMap<Integer,Integer>();
 		Tree FPtree = new Tree();
 		
 		/*ArrayList<Pattern> fList = new ArrayList<Pattern>();
@@ -95,7 +101,7 @@ public class FPgrowth {
 		
 	}
 	
-	public static void genL1(ArrayList<Transaction> database, Hashtable<Integer,Integer> L1){
+	public static void genL1(ArrayList<Transaction> database, HashMap<Integer,Integer> L1){
 		for(Transaction t:database){
 			for(int itemId:t.itemset){
 				if(L1.containsKey(itemId)){
@@ -107,9 +113,10 @@ public class FPgrowth {
 		}
 	}
 	
-	public static void genFList(Hashtable<Integer,Integer> L1, Hashtable<Integer,Integer> fList, int miniSup){
+	public static void genFList(HashMap<Integer,Integer> L1, HashMap<Integer,Integer> fList, int miniSup){
 		Enumeration<Integer> Keys = L1.keys();
 		int key;
+		
 		while(Keys.hasMoreElements()){
 			key = Keys.nextElement();
 			if(L1.get(key)>= miniSup){
@@ -118,6 +125,7 @@ public class FPgrowth {
 		}
 		
 		//sort fList with respect to minimum support
+		
 	}
 	
 	public static void constructFPtree(Tree FPtree, ArrayList<Transaction> database){
@@ -127,6 +135,30 @@ public class FPgrowth {
 	}
 	
 	public void sortItems(Transaction t){
-		
+	  
+	}
+	
+	public static <K extends Comparable,V extends Comparable> Map<K,V> sortByValues(Map<K,V> map){
+	    List<Map.Entry<K,V>> entries = new LinkedList<Map.Entry<K,V>>(map.entrySet());
+	  
+	    Collections.sort(entries, new Comparator<Map.Entry<K,V>>() {
+
+	        @Override
+	        public int compare(Entry<K, V> o1, Entry<K, V> o2) {
+	            return o1.getValue().compareTo(o2.getValue());
+	        }
+	    });
+	  
+	    //LinkedHashMap will keep the keys in the order they are inserted
+	    //which is currently sorted on natural ordering
+	    Map<K,V> sortedMap = new LinkedHashMap<K,V>();
+	  
+	    for(Map.Entry<K,V> entry: entries){
+	        sortedMap.put(entry.getKey(), entry.getValue());
+	    }
+	  
+	    return sortedMap;
 	}
 }
+
+
