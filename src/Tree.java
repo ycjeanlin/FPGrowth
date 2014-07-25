@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 
-public class FPtree {
+public class Tree {
 	treeNode root;
 	ArrayList<treeNode> hTable = new ArrayList<treeNode>();
 	
