@@ -5,20 +5,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-class frequentItem{
+class FrequentItem{
 	private int itemId;
 	private int count;
 	
-	public frequentItem(int itemId, int count){
+	public FrequentItem(int itemId, int count){
 		this.itemId = itemId;
 		this.count = count;
 	}
@@ -27,7 +26,7 @@ class frequentItem{
 		return itemId;
 	}
 
-	public int count(){
+	public int getCount(){
 		return count;
 	}
 	
@@ -36,20 +35,19 @@ class frequentItem{
 	}
 }
 
-class Transaction{
+/*class Transaction{
 	public ArrayList<Integer> itemset = new ArrayList<Integer>();
 
 	public Transaction(ArrayList<Integer> itemset){
 		this.itemset = itemset;
 	}
-}
+}*/
 
 public class FPgrowth {
 	
 	public static int MiniSup = 0;
 	public static String DB;
 	
-
 
 	public static void main(String[] args) {
 		// Parameter setting
@@ -62,14 +60,19 @@ public class FPgrowth {
 		}
 		
 		//data structure initialization
-		BufferedReader br = null;
-		HashMap<Integer,Integer> fList =  new HashMap<Integer,Integer>();
-		HashMap<Integer,Integer> L1 = new HashMap<Integer,Integer>();
+		List<FrequentItem> fList = new ArrayList<FrequentItem>();
+		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
 		Tree FPtree = new Tree();
 		
-		/*ArrayList<Pattern> fList = new ArrayList<Pattern>();
-		ArrayList<Pattern> L1 = new ArrayList<Pattern>();*/
-		ArrayList<Transaction> Database = new ArrayList<Transaction>();
+		genL1(L1);
+		genFList(L1, fList, MiniSup);
+
+		
+	}
+	
+	public static void genL1(HashMap<Integer,Integer> L1){
+		BufferedReader br = null;
+		ArrayList<Integer> itemset = new ArrayList<Integer>();
 		
 		try {
 			String trans;
@@ -78,13 +81,19 @@ public class FPgrowth {
 			br = new BufferedReader(new FileReader("Dataset//" + DB));
 			
 			while((trans = br.readLine())!= null){
-				ArrayList<Integer> itemset = new ArrayList<Integer>();
 				items = trans.split(",");
 				for(String item:items){
 					itemset.add(Integer.parseInt(item.trim()));
 				}
 				
-				Database.add(new Transaction(itemset));
+				for(int itemId:itemset){
+					if(L1.containsKey(itemId)){
+						L1.put(itemId, L1.get(itemId)+1);
+					}else{
+						L1.put(itemId, 1);
+					}
+				}
+				itemset.clear();
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -94,82 +103,47 @@ public class FPgrowth {
 			e.printStackTrace();
 		}
 		
-		//Check the database
-		/*for(Transaction t:Database){
-			System.out.println("transaction: "+t.itemset.toString());
-		}*/
-		
-		genL1(Database, L1);
-		genFList(L1, fList, MiniSup);
-		
-		//Check the correction of fList
-		/*int key;
-		Enumeration<Integer> Keys = fList.keys();
-		while(Keys.hasMoreElements()){
-			key = Keys.nextElement();
-			System.out.println(key+":"+fList.get(key));
-		}*/
-		
+		System.out.println(L1.toString());
+
 	}
 	
-	public static void genL1(ArrayList<Transaction> database, HashMap<Integer,Integer> L1){
-		for(Transaction t:database){
-			for(int itemId:t.itemset){
-				if(L1.containsKey(itemId)){
-					L1.put(itemId, L1.get(itemId)+1);
-				}else{
-					L1.put(itemId, 1);
-				}
-			}
-		}
-	}
-	
-	public static void genFList(HashMap<Integer,Integer> L1, HashMap<Integer,Integer> fList, int miniSup){
-		Enumeration<Integer> Keys = L1.keys();
-		int key;
+	public static void genFList(HashMap<Integer,Integer> L1, List<FrequentItem> fList, int miniSup){
 		
-		while(Keys.hasMoreElements()){
-			key = Keys.nextElement();
-			if(L1.get(key)>= miniSup){
-				fList.put(key, L1.get(key));
+		Iterator<Entry<Integer, Integer>> it = L1.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<Integer,Integer> pairs = (Map.Entry<Integer,Integer>)it.next();
+	        if(((Integer) pairs.getValue()) >= miniSup){
+				fList.add(new FrequentItem((Integer)pairs.getKey(), (Integer)pairs.getValue()));
 			}
-		}
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+	    
+	    /*System.out.println("fList before sorted");
+	    System.out.println(fList.toString());*/
 		
 		//sort fList with respect to minimum support
+	    Collections.sort(fList,
+	            new Comparator<FrequentItem>() {
+	                public int compare(FrequentItem o1, FrequentItem o2) {
+	                    return o2.getCount()-o1.getCount();
+	                }
+	            });
+	    
+	    /*System.out.println("fList after sorted");
+	    for(Object o:fList){
+	    	System.out.println(o);
+	    }*/
 		
 	}
 	
-	public static void constructFPtree(Tree FPtree, ArrayList<Transaction> database){
-		for(Transaction t:database){
-			
-		}
-	}
-	
-	public void sortItems(Transaction t){
-	  
-	}
-	
-	public static <K extends Comparable,V extends Comparable> Map<K,V> sortByValues(Map<K,V> map){
-	    List<Map.Entry<K,V>> entries = new LinkedList<Map.Entry<K,V>>(map.entrySet());
-	  
-	    Collections.sort(entries, new Comparator<Map.Entry<K,V>>() {
+	public static void constructFPtree(Tree FPtree){
 
-	        @Override
-	        public int compare(Entry<K, V> o1, Entry<K, V> o2) {
-	            return o1.getValue().compareTo(o2.getValue());
-	        }
-	    });
-	  
-	    //LinkedHashMap will keep the keys in the order they are inserted
-	    //which is currently sorted on natural ordering
-	    Map<K,V> sortedMap = new LinkedHashMap<K,V>();
-	  
-	    for(Map.Entry<K,V> entry: entries){
-	        sortedMap.put(entry.getKey(), entry.getValue());
-	    }
-	  
-	    return sortedMap;
 	}
+	
+	public void sortItems(){
+	  
+	}
+
 }
 
 
