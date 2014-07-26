@@ -21,6 +21,12 @@ public class Tree {
 		}
 	}
 	
+	private Node searchNode(int itemId){
+		Node returnNode = new Node();
+			
+		return returnNode;
+	}
+	
 	public void traverseTree(){
 		
 	}
