@@ -14,16 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-
-/*class Pattern{
-	public int itemId;
-	public int count;
+class frequentItem{
+	private int itemId;
+	private int count;
 	
-	public Pattern(int itemId, int count){
+	public frequentItem(int itemId, int count){
 		this.itemId = itemId;
 		this.count = count;
 	}
-}*/
+	
+	public int getItemId(){
+		return itemId;
+	}
+
+	public int count(){
+		return count;
+	}
+	
+	public String toString(){
+		return itemId+"\t"+count;
+	}
+}
 
 class Transaction{
 	public ArrayList<Integer> itemset = new ArrayList<Integer>();
