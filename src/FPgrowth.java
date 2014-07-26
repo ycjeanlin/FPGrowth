@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,13 +33,28 @@ class FrequentItem{
 	}
 }
 
-/*class Transaction{
-	public ArrayList<Integer> itemset = new ArrayList<Integer>();
-
-	public Transaction(ArrayList<Integer> itemset){
-		this.itemset = itemset;
+class Pair{
+	private int id;
+	private int order;
+	
+	public Pair(int id, int order){
+		this.id = id;
+		this.order = order;
 	}
-}*/
+	
+	public int getId(){
+		return id;
+	}
+	
+	public int getOrder(){
+		return order;
+	}
+	
+	public String toString(){
+		return id+" "+order;
+	}
+}
+
 
 public class FPgrowth {
 	
@@ -61,12 +74,17 @@ public class FPgrowth {
 		
 		//data structure initialization
 		List<FrequentItem> fList = new ArrayList<FrequentItem>();
+		HashMap<Integer, Integer> HashFList = new HashMap<Integer, Integer>();
 		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
-		Tree FPtree = new Tree();
+		Tree FPtree = null;
 		
 		genL1(L1);
-		genFList(L1, fList, MiniSup);
-
+		
+		genFList(L1, fList, HashFList, MiniSup);
+		
+		FPtree = new Tree(fList);
+		
+		//constructFPtree(FPtree);
 		
 	}
 	
@@ -107,19 +125,19 @@ public class FPgrowth {
 
 	}
 	
-	public static void genFList(HashMap<Integer,Integer> L1, List<FrequentItem> fList, int miniSup){
+	public static void genFList(HashMap<Integer,Integer> L1, List<FrequentItem> fList, HashMap<Integer,Integer> HashFList, int miniSup){
 		
 		Iterator<Entry<Integer, Integer>> it = L1.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry<Integer,Integer> pairs = (Map.Entry<Integer,Integer>)it.next();
 	        if(((Integer) pairs.getValue()) >= miniSup){
-				fList.add(new FrequentItem((Integer)pairs.getKey(), (Integer)pairs.getValue()));
+	        	fList.add(new FrequentItem((Integer)pairs.getKey(), (Integer)pairs.getValue()));
 			}
 	        it.remove(); // avoids a ConcurrentModificationException
 	    }
 	    
 	    /*System.out.println("fList before sorted");
-	    System.out.println(fList.toString());*/
+	    System.out.println(tempList.toString());*/
 		
 		//sort fList with respect to minimum support
 	    Collections.sort(fList,
@@ -128,20 +146,64 @@ public class FPgrowth {
 	                    return o2.getCount()-o1.getCount();
 	                }
 	            });
-	    
-	    /*System.out.println("fList after sorted");
-	    for(Object o:fList){
-	    	System.out.println(o);
-	    }*/
+	    int order = 0;
+	    for(FrequentItem item:fList){
+	    	HashFList.put(item.getItemId(), order);
+	    	order++;
+	    }
+	}
+	
+	public static void constructFPtree(Tree FPtree, HashMap<Integer,Integer> HashFList){
+		BufferedReader br = null;
+		ArrayList<Integer> itemset = new ArrayList<Integer>();
 		
+		try {
+			String trans;
+			String[] items;
+			
+			br = new BufferedReader(new FileReader("Dataset//" + DB));
+			
+			while((trans = br.readLine())!= null){
+				items = trans.split(",");
+				for(String item:items){
+					itemset.add(Integer.parseInt(item.trim()));
+				}
+				
+				sortItems(itemset, HashFList);
+				FPtree.insertTransaction(itemset);
+				itemset.clear();
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public static void constructFPtree(Tree FPtree){
+	public static void sortItems(ArrayList<Integer> itemset, HashMap<Integer,Integer> hFList){
 
-	}
-	
-	public void sortItems(){
-	  
+		List<Pair> sortItem = new ArrayList<Pair>();
+		
+		for(int item:itemset){
+			if(hFList.containsKey(item)){
+				sortItem.add(new Pair(item, hFList.get(item)));
+			}
+		}
+		
+		Collections.sort(sortItem,
+	            new Comparator<Pair>() {
+	                public int compare(Pair o1, Pair o2) {
+	                    return o2.getOrder()-o1.getOrder();
+	                }
+	            });
+		
+		itemset.clear();
+		
+		for(Pair p:sortItem){
+			itemset.add(p.getId());
+		}
 	}
 
 }

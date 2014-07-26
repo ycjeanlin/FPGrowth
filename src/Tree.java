@@ -1,33 +1,44 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 
 
 public class Tree {
-	treeNode root;
-	ArrayList<treeNode> hTable = new ArrayList<treeNode>();
+	private Node root;
+	HashMap <Integer, Node> hTable = new HashMap<Integer, Node>();
 	
-	public void insertNode(treeNode newNode){
+	public Tree(List<FrequentItem> fList){
+		for(FrequentItem it:fList){
+			hTable.put(it.getItemId(), null);
+		}
+	}
+	
+	public void insertTransaction(ArrayList<Integer> transaction){
 		
+		for(int item:transaction){
+
+		}
 	}
 	
 	public void traverseTree(){
 		
 	}
 	
-	
-
 }
 
-class treeNode{
+class Node{
 	int itemId;
 	int count;
-	treeNode headerLink;
-	treeNode parentLink;
+	Node headerLink;
+	Node parentLink;
+	ArrayList <Node> childlink;
 	
-	public treeNode(){
+	public Node(){
 		
 	}
 	
-	public treeNode(int itemId, int count){
+	public Node(int itemId, int count){
 		this.itemId = itemId;
 		this.count = count;
 	}
