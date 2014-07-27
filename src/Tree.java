@@ -54,18 +54,6 @@ public class Tree {
 			
 	}
 	
-	//Add new node to the header table
-	private void addNodeLink(Node newNode){
-		Node tempNode = null;
-		
-		tempNode = hTable.get(newNode.itemId);
-		if(!hTable.replace(newNode.itemId, tempNode, newNode)){
-			System.out.println("Error addNodeLink()");
-			System.exit(1);
-		}
-		
-		newNode.headerLink = tempNode;
-	}
 	
 	//Traverse the FPtree
 	public void traverseTree(){
@@ -88,6 +76,26 @@ public class Tree {
 		}
 	}
 	
+	public void growth(List<FrequentItem> fList, ArrayList<FrequentPattern> fPattern){
+		Node tempNode = null;
+		
+		for(FrequentItem item:fList){
+			tempNode = hTable.get(item.getItemId());
+		}
+	}
+	
+	//Add new node to the header table
+	private void addNodeLink(Node newNode){
+		Node tempNode = null;
+		
+		tempNode = hTable.get(newNode.itemId);
+		if(!hTable.replace(newNode.itemId, tempNode, newNode)){
+			System.out.println("Error addNodeLink()");
+			System.exit(1);
+		}
+		
+		newNode.headerLink = tempNode;
+	}	
 }
 
 class Node{

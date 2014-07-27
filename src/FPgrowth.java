@@ -33,6 +33,28 @@ class FrequentItem{
 	}
 }
 
+class FrequentPattern{
+	private ArrayList<Integer> pattern =  new ArrayList<Integer>();
+	private int count;
+	
+	public FrequentPattern(ArrayList<Integer> pattern, int count){
+		this.pattern = pattern;
+		this.count = count;
+	}
+	
+	public ArrayList<Integer> getFrequentPattern(){
+		return pattern;
+	}
+	
+	public int getCount(){
+		return count;
+	}
+	
+	public String toString(){
+		return pattern.toString()+":"+count;
+	}
+}
+
 class Pair{
 	private int id;
 	private int order;
@@ -60,7 +82,6 @@ public class FPgrowth {
 	
 	public static int MiniSup = 0;
 	public static String DB;
-	
 
 	public static void main(String[] args) {
 		// Parameter setting
@@ -77,6 +98,7 @@ public class FPgrowth {
 		HashMap<Integer, Integer> HashFList = new HashMap<Integer, Integer>();
 		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
 		Tree FPtree = null;
+		ArrayList<FrequentPattern> fPatterns = new ArrayList<FrequentPattern>();
 		
 		genL1(L1);
 		
@@ -145,7 +167,7 @@ public class FPgrowth {
 	            });
 	    
 	    //Show the fList after sorted
-	   /* System.out.println("====fList after sorted====");
+	   /*System.out.println("====fList after sorted====");
 	    System.out.println(fList.toString());*/
 	    int order = 0;
 	    for(FrequentItem item:fList){
