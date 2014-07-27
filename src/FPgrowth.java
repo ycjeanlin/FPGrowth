@@ -29,7 +29,7 @@ class FrequentItem{
 	}
 	
 	public String toString(){
-		return itemId+"\t"+count;
+		return itemId+":"+count;
 	}
 }
 
@@ -84,7 +84,7 @@ public class FPgrowth {
 		
 		FPtree = new Tree(fList);
 		
-		//constructFPtree(FPtree);
+		constructFPtree(FPtree, HashFList);
 		
 	}
 	
@@ -146,6 +146,9 @@ public class FPgrowth {
 	                    return o2.getCount()-o1.getCount();
 	                }
 	            });
+	    
+	    System.out.println("====fList after sorted====");
+	    System.out.println(fList.toString());
 	    int order = 0;
 	    for(FrequentItem item:fList){
 	    	HashFList.put(item.getItemId(), order);
@@ -170,6 +173,7 @@ public class FPgrowth {
 				}
 				
 				sortItems(itemset, HashFList);
+				System.out.println(itemset.toString());
 				FPtree.insertTransaction(itemset);
 				itemset.clear();
 			}
@@ -180,6 +184,8 @@ public class FPgrowth {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		FPtree.traverseTree();
 	}
 	
 	public static void sortItems(ArrayList<Integer> itemset, HashMap<Integer,Integer> hFList){
@@ -195,7 +201,7 @@ public class FPgrowth {
 		Collections.sort(sortItem,
 	            new Comparator<Pair>() {
 	                public int compare(Pair o1, Pair o2) {
-	                    return o2.getOrder()-o1.getOrder();
+	                    return o1.getOrder()-o2.getOrder();
 	                }
 	            });
 		
