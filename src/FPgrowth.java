@@ -110,7 +110,7 @@ public class FPgrowth {
 		
 		FPtree.traverseTree();
 		
-		FPtree.growth(fList, fPatterns);
+		FPtree.growth(fPatterns);
 		
 	}
 	

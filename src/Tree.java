@@ -10,21 +10,20 @@ import java.util.Stack;
 public class Tree {
 	private Node root = new Node();
 	HashMap <Integer, Node> hTable = new HashMap<Integer, Node>();
+	List<FrequentItem> fList;
 	
 	public Tree(){
 		
 	}
 	
-	public Tree(List<FrequentItem> fList){
-		for(FrequentItem it:fList){
-			hTable.put(it.getItemId(), null);
-		}
-		
+	public Tree(List<FrequentItem> fList){		
 		root.parentLink = null;
+		this.fList = fList;
 	}
 	
 	public void insertTransaction(ArrayList<Integer> transaction){
 		insertItem(transaction, 0 , root);
+		checkHTable();
 	}
 	
 	private void insertItem(ArrayList<Integer> transaction, int index, Node nextNode){
@@ -62,7 +61,7 @@ public class Tree {
 	
 	//Traverse the FPtree
 	public void traverseTree(){
-		Queue traverseSeq = new LinkedList();
+		Queue<Node> traverseSeq = new LinkedList<Node>();
 		Node tempNode = null;
 		
 		System.out.println(root.toString());
@@ -81,7 +80,7 @@ public class Tree {
 		}
 	}
 	
-	public void growth(List<FrequentItem> fList, ArrayList<FrequentPattern> fPatterns){
+	public void growth(ArrayList<FrequentPattern> fPatterns){
 		Node pNode = null;
 		Tree subTree = new Tree();
 		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
@@ -93,31 +92,36 @@ public class Tree {
 			System.out.println(condDB.toString());
 			condDB.clear();
 		}
-		
-		
 	}
 	
 	//Add new node to the header table
 	private void addNodeLink(Node newNode){
 		Node tempNode = null;
 
+		/*if(newNode.itemId == 4){
+			System.out.println("Start Debugging");
+		}*/
+
 		tempNode = hTable.get(newNode.itemId);
-		if(!hTable.replace(newNode.itemId, tempNode, newNode)){
-			System.out.println("Error addNodeLink()");
-			System.exit(1);
+		if(tempNode != null){
+			if(!hTable.replace(newNode.itemId, tempNode, newNode)){
+				System.out.println("Error addNode()");
+				System.exit(1);
+			}
+			newNode.headerLink = tempNode;
+		}else{
+			hTable.put(newNode.itemId, newNode);
 		}
-		
-		newNode.headerLink = tempNode;
 	}
 	
 	private void genCondDB(ArrayList<FrequentPattern> condDB, Node currentNode){
 		Node pNode = null;
 		pNode = currentNode;
-		Stack cachePattern = new Stack();
+		Stack<Integer> cachePattern = new Stack<Integer>();
 		int count;
 		do{
 			count = pNode.count;
-			while(pNode.parentLink.itemId != 0 && pNode.parentLink.count != 0){
+			while(pNode.parentLink.parentLink != null){
 				pNode = pNode.parentLink;
 				cachePattern.push(pNode.itemId);
 			}
@@ -131,6 +135,18 @@ public class Tree {
 			condDB.add(new FrequentPattern(pattern, count));
 			pNode = pNode.headerLink;
 		}while(pNode != null);
+	}
+	
+	private void checkHTable(){
+		Node tempNode = null;
+		
+		for(int i = fList.size()-1;i>=0;i--){
+			tempNode = hTable.get(fList.get(i).getItemId());
+			while(tempNode != null){
+				System.out.println(tempNode.toString());
+				tempNode = tempNode.headerLink;
+			}
+		}
 	}
 		
 }
