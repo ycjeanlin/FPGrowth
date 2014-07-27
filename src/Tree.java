@@ -3,12 +3,17 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Stack;
 
 
 
 public class Tree {
 	private Node root = new Node();
 	HashMap <Integer, Node> hTable = new HashMap<Integer, Node>();
+	
+	public Tree(){
+		
+	}
 	
 	public Tree(List<FrequentItem> fList){
 		for(FrequentItem it:fList){
@@ -76,18 +81,26 @@ public class Tree {
 		}
 	}
 	
-	public void growth(List<FrequentItem> fList, ArrayList<FrequentPattern> fPattern){
-		Node tempNode = null;
+	public void growth(List<FrequentItem> fList, ArrayList<FrequentPattern> fPatterns){
+		Node pNode = null;
+		Tree subTree = new Tree();
+		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
 		
-		for(FrequentItem item:fList){
-			tempNode = hTable.get(item.getItemId());
+		for(int i=fList.size()-1;i>=0;i--){
+			FrequentItem item = fList.get(i);
+			pNode = hTable.get(item.getItemId());
+			genCondDB(condDB, pNode);
+			System.out.println(condDB.toString());
+			condDB.clear();
 		}
+		
+		
 	}
 	
 	//Add new node to the header table
 	private void addNodeLink(Node newNode){
 		Node tempNode = null;
-		
+
 		tempNode = hTable.get(newNode.itemId);
 		if(!hTable.replace(newNode.itemId, tempNode, newNode)){
 			System.out.println("Error addNodeLink()");
@@ -95,13 +108,37 @@ public class Tree {
 		}
 		
 		newNode.headerLink = tempNode;
-	}	
+	}
+	
+	private void genCondDB(ArrayList<FrequentPattern> condDB, Node currentNode){
+		Node pNode = null;
+		pNode = currentNode;
+		Stack cachePattern = new Stack();
+		int count;
+		do{
+			count = pNode.count;
+			while(pNode.parentLink.itemId != 0 && pNode.parentLink.count != 0){
+				pNode = pNode.parentLink;
+				cachePattern.push(pNode.itemId);
+			}
+			
+			//reverse the order of the pattern
+			ArrayList<Integer> pattern = new ArrayList<Integer>();
+			while(!cachePattern.isEmpty()){
+				pattern.add((Integer) cachePattern.pop());
+			}
+			
+			condDB.add(new FrequentPattern(pattern, count));
+			pNode = pNode.headerLink;
+		}while(pNode != null);
+	}
+		
 }
 
 class Node{
 	int itemId;
 	int count;
-	Node headerLink;
+	Node headerLink = null;
 	Node parentLink;
 	ArrayList <Node> childlink = new ArrayList<Node>();
 	

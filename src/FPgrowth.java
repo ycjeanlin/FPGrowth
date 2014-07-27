@@ -108,6 +108,10 @@ public class FPgrowth {
 		
 		constructFPtree(FPtree, HashFList);
 		
+		FPtree.traverseTree();
+		
+		FPtree.growth(fList, fPatterns);
+		
 	}
 	
 	public static void genL1(HashMap<Integer,Integer> L1){
