@@ -14,21 +14,24 @@ public class Tree {
 		for(FrequentItem it:fList){
 			hTable.put(it.getItemId(), null);
 		}
+		
+		root.parentLink = null;
 	}
 	
 	public void insertTransaction(ArrayList<Integer> transaction){
 		insertItem(transaction, 0 , root);
-		
 	}
 	
 	private void insertItem(ArrayList<Integer> transaction, int index, Node nextNode){
 		boolean found = false;
 		
+		//Find the sharing node and if found, the count of the node increase 1
 		if(!nextNode.childlink.isEmpty()){
 			for(Node child:nextNode.childlink){
 				if(transaction.size() > index){
 					if(child.itemId == transaction.get(index)){
 						child.count++;
+						//Continue traversing the path until there is no sharing node
 						insertItem(transaction, index+1, child);
 						found = true;
 						break;
@@ -37,6 +40,7 @@ public class Tree {
 			}
 		}
 		
+		//Start growing new path if there is no sharing node
 		if(!found && transaction.size() > index){
 			Node childNode = null;
 			for(int i=index;i<transaction.size();i++){
@@ -50,6 +54,7 @@ public class Tree {
 			
 	}
 	
+	//Add new node to the header table
 	private void addNodeLink(Node newNode){
 		Node tempNode = null;
 		
@@ -62,6 +67,7 @@ public class Tree {
 		newNode.headerLink = tempNode;
 	}
 	
+	//Traverse the FPtree
 	public void traverseTree(){
 		Queue traverseSeq = new LinkedList();
 		Node tempNode = null;

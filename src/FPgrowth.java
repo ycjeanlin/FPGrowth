@@ -120,9 +120,6 @@ public class FPgrowth {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		System.out.println(L1.toString());
-
 	}
 	
 	public static void genFList(HashMap<Integer,Integer> L1, List<FrequentItem> fList, HashMap<Integer,Integer> HashFList, int miniSup){
@@ -147,8 +144,9 @@ public class FPgrowth {
 	                }
 	            });
 	    
-	    System.out.println("====fList after sorted====");
-	    System.out.println(fList.toString());
+	    //Show the fList after sorted
+	   /* System.out.println("====fList after sorted====");
+	    System.out.println(fList.toString());*/
 	    int order = 0;
 	    for(FrequentItem item:fList){
 	    	HashFList.put(item.getItemId(), order);
@@ -173,8 +171,9 @@ public class FPgrowth {
 				}
 				
 				sortItems(itemset, HashFList);
-				System.out.println(itemset.toString());
+				
 				FPtree.insertTransaction(itemset);
+				
 				itemset.clear();
 			}
 		} catch (FileNotFoundException e) {
@@ -185,7 +184,8 @@ public class FPgrowth {
 			e.printStackTrace();
 		}
 		
-		FPtree.traverseTree();
+		//Show the complete FPtree
+		//FPtree.traverseTree();
 	}
 	
 	public static void sortItems(ArrayList<Integer> itemset, HashMap<Integer,Integer> hFList){
