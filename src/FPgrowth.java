@@ -94,23 +94,25 @@ public class FPgrowth {
 		}
 		
 		//data structure initialization
-		List<FrequentItem> fList = new ArrayList<FrequentItem>();
-		HashMap<Integer, Integer> HashFList = new HashMap<Integer, Integer>();
 		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
 		Tree FPtree = null;
 		ArrayList<FrequentPattern> fPatterns = new ArrayList<FrequentPattern>();
 		
 		genL1(L1);
 		
-		genFList(L1, fList, HashFList, MiniSup);
+		FPtree = new Tree(MiniSup);
+		FPtree.genFList(L1);
 		
-		FPtree = new Tree(fList);
+		constructFPtree(FPtree);
 		
-		constructFPtree(FPtree, HashFList);
-		
-		FPtree.traverseTree();
+		//FPtree.traverseTree();
 		
 		FPtree.growth(fPatterns);
+		
+		System.out.println("Frequent Pattern");
+		for(FrequentPattern fp:fPatterns){
+			System.out.println(fp.toString());
+		}
 		
 	}
 	
@@ -122,7 +124,7 @@ public class FPgrowth {
 			String trans;
 			String[] items;
 			
-			br = new BufferedReader(new FileReader("Dataset//" + DB));
+			br = new BufferedReader(new FileReader("Dataset\\" + DB));
 			
 			while((trans = br.readLine())!= null){
 				items = trans.split(",");
@@ -180,7 +182,7 @@ public class FPgrowth {
 	    }
 	}
 	
-	public static void constructFPtree(Tree FPtree, HashMap<Integer,Integer> HashFList){
+	public static void constructFPtree(Tree FPtree){
 		BufferedReader br = null;
 		ArrayList<Integer> itemset = new ArrayList<Integer>();
 		
@@ -196,7 +198,7 @@ public class FPgrowth {
 					itemset.add(Integer.parseInt(item.trim()));
 				}
 				
-				sortItems(itemset, HashFList);
+				FPtree.sortItems(itemset);
 				
 				FPtree.insertTransaction(itemset);
 				
@@ -209,35 +211,7 @@ public class FPgrowth {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		//Show the complete FPtree
-		//FPtree.traverseTree();
 	}
-	
-	public static void sortItems(ArrayList<Integer> itemset, HashMap<Integer,Integer> hFList){
-
-		List<Pair> sortItem = new ArrayList<Pair>();
-		
-		for(int item:itemset){
-			if(hFList.containsKey(item)){
-				sortItem.add(new Pair(item, hFList.get(item)));
-			}
-		}
-		
-		Collections.sort(sortItem,
-	            new Comparator<Pair>() {
-	                public int compare(Pair o1, Pair o2) {
-	                    return o1.getOrder()-o2.getOrder();
-	                }
-	            });
-		
-		itemset.clear();
-		
-		for(Pair p:sortItem){
-			itemset.add(p.getId());
-		}
-	}
-
 }
 
 

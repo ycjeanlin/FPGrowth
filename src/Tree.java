@@ -1,29 +1,164 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.Map.Entry;
 
 
 
 public class Tree {
 	private Node root = new Node();
-	HashMap <Integer, Node> hTable = new HashMap<Integer, Node>();
-	List<FrequentItem> fList;
+	private HashMap <Integer, Node> hTable = new HashMap<Integer, Node>();
+	private List<FrequentItem> fList = new ArrayList<FrequentItem>();
+	private HashMap<Integer, Integer> HashFList = new HashMap<Integer, Integer>();//for sorting transaction
+	private int miniSup;
 	
 	public Tree(){
 		
 	}
 	
-	public Tree(List<FrequentItem> fList){		
+	public Tree(int miniSup){		
 		root.parentLink = null;
-		this.fList = fList;
+		this.miniSup = miniSup;
+	}
+	
+	public void genFList(HashMap<Integer,Integer> L1){
+		
+		Iterator<Entry<Integer, Integer>> it = L1.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<Integer,Integer> pairs = (Map.Entry<Integer,Integer>)it.next();
+	        if(((Integer) pairs.getValue()) >= miniSup){
+	        	fList.add(new FrequentItem((Integer)pairs.getKey(), (Integer)pairs.getValue()));
+			}
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+	    
+	    /*System.out.println("fList before sorted");
+	    System.out.println(tempList.toString());*/
+		
+		//sort fList with respect to minimum support
+	    Collections.sort(fList,
+	            new Comparator<FrequentItem>() {
+	                public int compare(FrequentItem o1, FrequentItem o2) {
+	                    return o2.getCount()-o1.getCount();
+	                }
+	            });
+	    
+	    //Show the fList after sorted
+	    /*System.out.println("====fList after sorted====");
+	    System.out.println(fList.toString());*/
+	    int order = 0;
+	    for(FrequentItem item:fList){
+	    	HashFList.put(item.getItemId(), order);
+	    	order++;
+	    }
+	}
+	
+	public void sortItems(ArrayList<Integer> itemset){
+
+		List<Pair> sortItem = new ArrayList<Pair>();
+		
+		for(int item:itemset){
+			if(HashFList.containsKey(item)){
+				sortItem.add(new Pair(item, HashFList.get(item)));
+			}
+		}
+		
+		Collections.sort(sortItem,
+	            new Comparator<Pair>() {
+	                public int compare(Pair o1, Pair o2) {
+	                    return o1.getOrder()-o2.getOrder();
+	                }
+	            });
+		
+		itemset.clear();
+		
+		for(Pair p:sortItem){
+			itemset.add(p.getId());
+		}
 	}
 	
 	public void insertTransaction(ArrayList<Integer> transaction){
 		insertItem(transaction, 0 , root);
-		checkHTable();
+	}
+	
+	//Traverse the FPtree
+	public void traverseTree(){
+		Queue<Node> traverseSeq = new LinkedList<Node>();
+		Node tempNode = null;
+		
+		System.out.println("====FPtree====");
+		System.out.println(root.toString());
+		for(Node child:root.childlink){
+			traverseSeq.add(child);
+		}
+		
+		while(!traverseSeq.isEmpty()){
+			tempNode = (Node)traverseSeq.remove();
+			System.out.println(tempNode.toString());
+			if(!tempNode.childlink.isEmpty()){
+				for(Node child:tempNode.childlink){
+					traverseSeq.add(child);
+				}
+			}
+		}
+		
+		/*System.out.println("====Header Table====");
+		checkHTable();*/
+	}
+	
+	public void growth(ArrayList<FrequentPattern> fPatterns){
+		Node pNode = null;
+		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
+		
+		for(int i=fList.size()-1;i>=0;i--){
+			//add frequent pattern to frequent pattern set 
+			ArrayList<Integer> pattern = new ArrayList<Integer>();
+			pattern.add(fList.get(i).getItemId());
+			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
+			fPatterns.add(fp);
+			
+			//grow conditional FPtree for frequent pattern fp
+			pNode = hTable.get(fList.get(i).getItemId());
+			genCondDB(condDB, pNode);
+			Tree condFPtree = new Tree(miniSup);
+			condFPtree.genFList(condDB);
+			condFPtree.constructFPtree(condDB);
+			condFPtree.growth(fPatterns,fp);
+			condDB.clear();
+		}
+	}
+	
+	private void growth(ArrayList<FrequentPattern> fPatterns, FrequentPattern subfp){
+		Node pNode;
+		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
+		
+		for(int i=fList.size()-1;i>=0;i--){
+			//add frequent pattern to frequent pattern set 
+			@SuppressWarnings("unchecked")
+			ArrayList<Integer> pattern = (ArrayList<Integer>) subfp.getFrequentPattern().clone();
+			pattern.add(fList.get(i).getItemId());
+			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
+			fPatterns.add(fp);
+			
+			pNode = hTable.get(fList.get(i).getItemId());
+			genCondDB(condDB, pNode);
+			for(FrequentPattern f:condDB){
+				System.out.println(f.toString());
+			}
+			Tree condFPtree = new Tree(miniSup);
+			condFPtree.genFList(condDB);
+			condFPtree.constructFPtree(condDB);
+
+			condFPtree.growth(fPatterns,fp);
+			condDB.clear();
+		}
 	}
 	
 	private void insertItem(ArrayList<Integer> transaction, int index, Node nextNode){
@@ -58,72 +193,51 @@ public class Tree {
 			
 	}
 	
-	
-	//Traverse the FPtree
-	public void traverseTree(){
-		Queue<Node> traverseSeq = new LinkedList<Node>();
-		Node tempNode = null;
-		
-		System.out.println(root.toString());
-		for(Node child:root.childlink){
-			traverseSeq.add(child);
-		}
-		
-		while(!traverseSeq.isEmpty()){
-			tempNode = (Node)traverseSeq.remove();
-			System.out.println(tempNode.toString());
-			if(!tempNode.childlink.isEmpty()){
-				for(Node child:tempNode.childlink){
-					traverseSeq.add(child);
-				}
-			}
-		}
-	}
-	
-	public void growth(ArrayList<FrequentPattern> fPatterns){
-		Node pNode = null;
-		Tree subTree = new Tree();
-		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
-		
-		for(int i=fList.size()-1;i>=0;i--){
-			FrequentItem item = fList.get(i);
-			pNode = hTable.get(item.getItemId());
-			genCondDB(condDB, pNode);
-			System.out.println(condDB.toString());
-			condDB.clear();
-		}
-	}
-	
 	//Add new node to the header table
 	private void addNodeLink(Node newNode){
 		Node tempNode = null;
 
-		/*if(newNode.itemId == 4){
-			System.out.println("Start Debugging");
-		}*/
-
 		tempNode = hTable.get(newNode.itemId);
-		if(tempNode != null){
-			if(!hTable.replace(newNode.itemId, tempNode, newNode)){
-				System.out.println("Error addNode()");
-				System.exit(1);
+		hTable.put(newNode.itemId, newNode);
+		newNode.headerLink = tempNode;
+	}
+	
+	private void genFList(ArrayList<FrequentPattern> condDB){
+		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
+		ArrayList<Integer> itemset = null;
+		int count;
+		
+		//count the support of each 1-item
+		for(FrequentPattern fp:condDB){
+			itemset = fp.getFrequentPattern();
+			count = fp.getCount();
+			while(count>0){
+				for(int itemId:itemset){
+					if(L1.containsKey(itemId)){
+						L1.put(itemId, L1.get(itemId)+1);
+					}else{
+						L1.put(itemId, 1);
+					}
+				}
+				count--;
 			}
-			newNode.headerLink = tempNode;
-		}else{
-			hTable.put(newNode.itemId, newNode);
 		}
+
+		genFList(L1);
 	}
 	
 	private void genCondDB(ArrayList<FrequentPattern> condDB, Node currentNode){
-		Node pNode = null;
-		pNode = currentNode;
+		Node tempNode = null;
+		Node pNode = currentNode;
+
 		Stack<Integer> cachePattern = new Stack<Integer>();
 		int count;
 		do{
 			count = pNode.count;
-			while(pNode.parentLink.parentLink != null){
-				pNode = pNode.parentLink;
-				cachePattern.push(pNode.itemId);
+			tempNode = pNode;
+			while(tempNode.parentLink.parentLink != null){
+				tempNode = tempNode.parentLink;
+				cachePattern.push(tempNode.itemId);
 			}
 			
 			//reverse the order of the pattern
@@ -132,9 +246,26 @@ public class Tree {
 				pattern.add((Integer) cachePattern.pop());
 			}
 			
-			condDB.add(new FrequentPattern(pattern, count));
+			if(!pattern.isEmpty()){
+				condDB.add(new FrequentPattern(pattern, count));
+			}
 			pNode = pNode.headerLink;
 		}while(pNode != null);
+	}
+	
+	private void constructFPtree(ArrayList<FrequentPattern> condDB){
+		ArrayList<Integer> itemset = null;
+		int count;
+		
+		for(FrequentPattern fp:condDB){
+			itemset = fp.getFrequentPattern();
+			count = fp.getCount();
+			sortItems(itemset);
+			while(count>0){
+				insertTransaction(itemset);
+				count--;
+			}
+		}
 	}
 	
 	private void checkHTable(){
@@ -143,12 +274,12 @@ public class Tree {
 		for(int i = fList.size()-1;i>=0;i--){
 			tempNode = hTable.get(fList.get(i).getItemId());
 			while(tempNode != null){
-				System.out.println(tempNode.toString());
+				System.out.print(tempNode.toString()+ " ");
 				tempNode = tempNode.headerLink;
 			}
+			System.out.println();
 		}
-	}
-		
+	}		
 }
 
 class Node{
