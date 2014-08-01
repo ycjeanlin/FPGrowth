@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,45 +82,84 @@ class Pair{
 
 public class FPgrowth {
 	
-	public static int MiniSup = 0;
+	public static double minMiniSup;
+	public static double maxMiniSup;
+	public static double miniConf;
 	public static String DB;
+	public static double MaxMemory;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
+		int numTran = 0;
+		int MSC;
+		double minSup;
+		int MCC;
+		int times;
+		long startTime;
+		long endTime;
+		long totalTime;
+		int numFP;
+		int numRule;
+		BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_result.csv"));
+		
 		// Parameter setting
 		if(args.length == 0){
 			System.out.println("Please enter your parameter.");
 			System.exit(0);
 		}else{
-			MiniSup = Integer.parseInt(args[0]);
-			DB = args[1];
+			minMiniSup = Double.parseDouble(args[0]);
+			maxMiniSup = Double.parseDouble(args[1]);
+			DB = args[2];
 		}
 		
-		//data structure initialization
-		HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
-		Tree FPtree = null;
-		ArrayList<FrequentPattern> fPatterns = new ArrayList<FrequentPattern>();
+		bw.write("Minimum Support,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
+		bw.newLine();
+		times = (int) (maxMiniSup/minMiniSup);
 		
-		genL1(L1);
-		
-		FPtree = new Tree(MiniSup);
-		FPtree.genFList(L1);
-		
-		constructFPtree(FPtree);
-		
-		//FPtree.traverseTree();
-		
-		FPtree.growth(fPatterns);
-		
-		System.out.println("Frequent Pattern");
-		for(FrequentPattern fp:fPatterns){
-			System.out.println(fp.toString());
+		while(times > 0){
+			times--;
+			numFP = 0;
+			numRule = 0;
+			minSup = (numTran*minMiniSup);
+			//data structure initialization
+			HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
+			Tree FPtree = null;
+			HashMap<ArrayList<Integer>,Integer> fPatterns = new HashMap<ArrayList<Integer>,Integer>();
+			
+			//start timing
+			startTime = System.currentTimeMillis();
+			
+			numTran = genL1(L1);
+			
+			MSC = (int) minSup*times;
+			MCC = (int) (numTran*miniConf);
+			
+			FPtree = new Tree(MSC);
+			FPtree.genFList(L1);
+			
+			constructFPtree(FPtree);
+			
+			//FPtree.traverseTree();
+			
+			FPtree.growth(fPatterns);
+			
+			numFP = fPatterns.size();
+			
+			numRule = genRule(fPatterns);
+			
+			endTime = System.currentTimeMillis();
+			totalTime = (endTime - startTime)/1000;
+			bw.write(minSup+","+numFP+","+totalTime+","+MaxMemory);
+			bw.newLine();
+			
 		}
 		
+		bw.close();
 	}
 	
-	public static void genL1(HashMap<Integer,Integer> L1){
+	public static int genL1(HashMap<Integer,Integer> L1){
 		BufferedReader br = null;
 		ArrayList<Integer> itemset = new ArrayList<Integer>();
+		int numTran = 0;
 		
 		try {
 			String trans;
@@ -127,6 +168,7 @@ public class FPgrowth {
 			br = new BufferedReader(new FileReader("Dataset\\" + DB));
 			
 			while((trans = br.readLine())!= null){
+				numTran++;
 				items = trans.split(",");
 				for(String item:items){
 					itemset.add(Integer.parseInt(item.trim()));
@@ -141,6 +183,7 @@ public class FPgrowth {
 				}
 				itemset.clear();
 			}
+			br.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -148,6 +191,8 @@ public class FPgrowth {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		return numTran;
 	}
 	
 	public static void genFList(HashMap<Integer,Integer> L1, List<FrequentItem> fList, HashMap<Integer,Integer> HashFList, int miniSup){
@@ -211,6 +256,34 @@ public class FPgrowth {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public static int genRule(HashMap<ArrayList<Integer>,Integer> fPatterns){
+		int numRule = 0;
+		double sup1;
+		double sup2;
+		double confidence;
+		ArrayList<Integer> itemset = null;
+		ArrayList<Integer> LHS = null;
+		ArrayList<Integer> RHS = null;
+		
+		Iterator<Entry<ArrayList<Integer>, Integer>> it = fPatterns.entrySet().iterator();
+		while (it.hasNext()) {
+	        Map.Entry<ArrayList<Integer>,Integer> fp = (Map.Entry<ArrayList<Integer>,Integer>)it.next();
+	        itemset = fp.getKey();
+	        LHS = (ArrayList<Integer>) itemset.clone();
+	        for(int itemId:itemset){
+	        	RHS.add(LHS.remove(LHS.size()-1));
+	        	sup1 = fPatterns.get(LHS);
+	        	sup2 = fPatterns.get(RHS);
+	        	
+	        }
+	        
+	        
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+		
+		return numRule;
 	}
 }
 
