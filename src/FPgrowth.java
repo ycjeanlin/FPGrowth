@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.StringTokenizer;
 
 class FrequentItem{
 	private int itemId;
@@ -92,7 +93,6 @@ public class FPgrowth {
 		int numTran = 0;
 		int MSC;
 		double minSup;
-		int MCC;
 		int times;
 		long startTime;
 		long endTime;
@@ -108,7 +108,8 @@ public class FPgrowth {
 		}else{
 			minMiniSup = Double.parseDouble(args[0]);
 			maxMiniSup = Double.parseDouble(args[1]);
-			DB = args[2];
+			miniConf = Double.parseDouble(args[2]);
+			DB = args[3];
 		}
 		
 		bw.write("Minimum Support,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
@@ -119,19 +120,19 @@ public class FPgrowth {
 			times--;
 			numFP = 0;
 			numRule = 0;
-			minSup = (numTran*minMiniSup);
+			
 			//data structure initialization
 			HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
 			Tree FPtree = null;
-			HashMap<ArrayList<Integer>,Integer> fPatterns = new HashMap<ArrayList<Integer>,Integer>();
+			HashMap<String,Integer> fPatterns = new HashMap<String,Integer>();
 			
 			//start timing
 			startTime = System.currentTimeMillis();
 			
 			numTran = genL1(L1);
-			
+			minSup = numTran*0.1/100.0;
+			System.out.println(minSup);
 			MSC = (int) minSup*times;
-			MCC = (int) (numTran*miniConf);
 			
 			FPtree = new Tree(MSC);
 			FPtree.genFList(L1);
@@ -142,13 +143,14 @@ public class FPgrowth {
 			
 			FPtree.growth(fPatterns);
 			
+			saveFrequentPattern(fPatterns);
 			numFP = fPatterns.size();
 			
 			numRule = genRule(fPatterns);
 			
 			endTime = System.currentTimeMillis();
 			totalTime = (endTime - startTime)/1000;
-			bw.write(minSup+","+numFP+","+totalTime+","+MaxMemory);
+			bw.write(minSup+","+numFP+","+numRule+","+totalTime+","+MaxMemory);
 			bw.newLine();
 			
 		}
@@ -258,31 +260,85 @@ public class FPgrowth {
 		}
 	}
 	
-	public static int genRule(HashMap<ArrayList<Integer>,Integer> fPatterns){
-		int numRule = 0;
-		double sup1;
-		double sup2;
-		double confidence;
-		ArrayList<Integer> itemset = null;
-		ArrayList<Integer> LHS = null;
-		ArrayList<Integer> RHS = null;
-		
-		Iterator<Entry<ArrayList<Integer>, Integer>> it = fPatterns.entrySet().iterator();
+	public static void saveFrequentPattern(HashMap<String,Integer> fPatterns){
+		Iterator<Entry<String, Integer>> it = fPatterns.entrySet().iterator();
 		while (it.hasNext()) {
-	        Map.Entry<ArrayList<Integer>,Integer> fp = (Map.Entry<ArrayList<Integer>,Integer>)it.next();
-	        itemset = fp.getKey();
-	        LHS = (ArrayList<Integer>) itemset.clone();
-	        for(int itemId:itemset){
-	        	RHS.add(LHS.remove(LHS.size()-1));
-	        	sup1 = fPatterns.get(LHS);
-	        	sup2 = fPatterns.get(RHS);
-	        	
-	        }
-	        
-	        
-	        it.remove(); // avoids a ConcurrentModificationException
-	    }
+			Map.Entry<String,Integer> fp = (Map.Entry<String,Integer>)it.next();
+			System.out.println(fp.getKey()+":"+fp.getValue());
+		}
+	}
+	
+	public static int genRule(HashMap<String,Integer> fPatterns){
+		int numRule = 0;
+		double LHSCount = 0;
+		double count;
+		double confidence;
+		ArrayList<Integer> itemset = new ArrayList<Integer>();
+		ArrayList<Integer> LHS = new ArrayList<Integer>();
+		ArrayList<Integer> RHS = new ArrayList<Integer>();
 		
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_rule.txt"));
+			Iterator<Entry<String, Integer>> it = fPatterns.entrySet().iterator();
+			while (it.hasNext()) {
+		        Map.Entry<String,Integer> fp = (Map.Entry<String,Integer>)it.next();
+		        StringTokenizer tokens = new StringTokenizer(fp.getKey(), "[], ");
+		        count = fp.getValue();
+		        
+		        while(tokens.hasMoreTokens()){
+		        	itemset.add(Integer.parseInt(tokens.nextToken()));
+		        }
+		        
+		        char[] digit = new char[itemset.size()]; 
+		        
+		        for(int i = 0; i <digit.length; i++) 
+		            digit[i] = '0'; 
+		        
+		        while(true) { 
+		            // 找第一個0，並將找到前所經過的元素變為0
+		            int i;
+		            for(i = 0; i < digit.length && digit[i] == '1';digit[i] = '0', i++); 
+
+		            if(i == digit.length)  // 找不到0 
+		                break; 
+		            else          // 將第一個找到的0變為1 
+		                digit[i] = '1'; 
+
+		            // 找第一個1，並記錄對應位置 
+		            for(i = 0; i < digit.length && digit[i] == '0'; i++){
+		            	RHS.add(itemset.get(i));
+		            }
+		        
+		            for(int j = i; j < digit.length; j++)
+		            {
+		                if(digit[j] == '1'){
+		                	LHS.add(itemset.get(j));
+		                }else{
+		                	RHS.add(itemset.get(j));
+		                }
+		            }
+		            System.out.println(LHS.toString());
+		            LHSCount = fPatterns.get(LHS.toString());
+		            confidence = count/LHSCount;
+		            
+		            if(confidence >= miniConf && LHS.size() < itemset.size()){
+		            	numRule++;
+		            	System.out.println(LHS.toString()+"->"+RHS.toString());
+						bw.write(LHS.toString()+"->"+RHS.toString());
+						bw.newLine();    			
+		            }
+		            LHS.clear();
+			        RHS.clear();
+		        } 	        
+		        itemset.clear();
+		        //it.remove(); // avoids a ConcurrentModificationException
+		    }
+			
+			bw.close();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}		
 		return numRule;
 	}
 }

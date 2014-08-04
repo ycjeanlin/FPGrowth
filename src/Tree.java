@@ -113,7 +113,7 @@ public class Tree {
 		checkHTable();*/
 	}
 	
-	public void growth(HashMap<ArrayList<Integer>,Integer> fPatterns){
+	public void growth(HashMap<String,Integer> fPatterns){
 		Node pNode = null;
 		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
 		
@@ -122,7 +122,7 @@ public class Tree {
 			ArrayList<Integer> pattern = new ArrayList<Integer>();
 			pattern.add(fList.get(i).getItemId());
 			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
-			fPatterns.put(pattern,fList.get(i).getCount());
+			fPatterns.put(pattern.toString(),fList.get(i).getCount());
 			
 			//grow conditional FPtree for frequent pattern fp
 			pNode = hTable.get(fList.get(i).getItemId());
@@ -135,7 +135,7 @@ public class Tree {
 		}
 	}
 	
-	private void growth(HashMap<ArrayList<Integer>,Integer> fPatterns, FrequentPattern subfp){
+	private void growth(HashMap<String,Integer> fPatterns, FrequentPattern subfp){
 		Node pNode;
 		ArrayList<FrequentPattern> condDB = new ArrayList<FrequentPattern>();
 		
@@ -145,7 +145,7 @@ public class Tree {
 			ArrayList<Integer> pattern = (ArrayList<Integer>) subfp.getFrequentPattern().clone();
 			pattern.add(fList.get(i).getItemId());
 			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
-			fPatterns.put(pattern,fList.get(i).getCount());
+			fPatterns.put(pattern.toString(),fList.get(i).getCount());
 			
 			pNode = hTable.get(fList.get(i).getItemId());
 			genCondDB(condDB, pNode);
