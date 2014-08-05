@@ -132,6 +132,7 @@ public class Tree {
 			condFPtree.constructFPtree(condDB);
 			condFPtree.growth(fPatterns,fp);
 			condDB.clear();
+			double current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
 		}
 	}
 	

@@ -146,7 +146,7 @@ public class FPgrowth {
 			saveFrequentPattern(fPatterns);
 			numFP = fPatterns.size();
 			
-			numRule = genRule(fPatterns);
+			numRule = genRule(fPatterns,MSC);
 			
 			endTime = System.currentTimeMillis();
 			totalTime = (endTime - startTime)/1000;
@@ -268,7 +268,7 @@ public class FPgrowth {
 		}
 	}
 	
-	public static int genRule(HashMap<String,Integer> fPatterns){
+	public static int genRule(HashMap<String,Integer> fPatterns, int minSup){
 		int numRule = 0;
 		double LHSCount = 0;
 		double count;
@@ -278,7 +278,7 @@ public class FPgrowth {
 		ArrayList<Integer> RHS = new ArrayList<Integer>();
 		
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_rule.txt"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_"+minSup+"_rule.txt"));
 			Iterator<Entry<String, Integer>> it = fPatterns.entrySet().iterator();
 			while (it.hasNext()) {
 		        Map.Entry<String,Integer> fp = (Map.Entry<String,Integer>)it.next();
