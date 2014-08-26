@@ -19,6 +19,7 @@ public class Tree {
 	private HashMap<Integer, Integer> HashFList = new HashMap<Integer, Integer>();//for sorting transaction
 	private int miniSup;
 	
+	
 	public Tree(){
 		
 	}
@@ -119,10 +120,10 @@ public class Tree {
 		
 		for(int i=fList.size()-1;i>=0;i--){
 			//add frequent pattern to frequent pattern set 
-			ArrayList<Integer> pattern = new ArrayList<Integer>();
-			pattern.add(fList.get(i).getItemId());
-			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
-			fPatterns.put(pattern.toString(),fList.get(i).getCount());
+			ArrayList<Integer> itemset = new ArrayList<Integer>();
+			itemset.add(fList.get(i).getItemId());
+			FrequentPattern fp = new FrequentPattern(itemset,fList.get(i).getCount());
+			fPatterns.put(itemset.toString(),fList.get(i).getCount());
 			
 			//grow conditional FPtree for frequent pattern fp
 			pNode = hTable.get(fList.get(i).getItemId());
@@ -132,7 +133,7 @@ public class Tree {
 			condFPtree.constructFPtree(condDB);
 			condFPtree.growth(fPatterns,fp);
 			condDB.clear();
-			double current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+			
 		}
 	}
 	
@@ -143,10 +144,11 @@ public class Tree {
 		for(int i=fList.size()-1;i>=0;i--){
 			//add frequent pattern to frequent pattern set 
 			@SuppressWarnings("unchecked")
-			ArrayList<Integer> pattern = (ArrayList<Integer>) subfp.getFrequentPattern().clone();
-			pattern.add(fList.get(i).getItemId());
-			FrequentPattern fp = new FrequentPattern(pattern,fList.get(i).getCount());
-			fPatterns.put(pattern.toString(),fList.get(i).getCount());
+			ArrayList<Integer> itemset = (ArrayList<Integer>) subfp.getFrequentPattern().clone();
+			itemset.add(fList.get(i).getItemId());
+			Collections.sort(itemset);
+			FrequentPattern fp = new FrequentPattern(itemset,fList.get(i).getCount());
+			fPatterns.put(itemset.toString(),fList.get(i).getCount());
 			
 			pNode = hTable.get(fList.get(i).getItemId());
 			genCondDB(condDB, pNode);

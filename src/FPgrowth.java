@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,6 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
+
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
 
 class FrequentItem{
 	private int itemId;
@@ -34,6 +40,7 @@ class FrequentItem{
 	public String toString(){
 		return itemId+":"+count;
 	}
+	
 }
 
 class FrequentPattern{
@@ -55,6 +62,28 @@ class FrequentPattern{
 	
 	public String toString(){
 		return pattern.toString()+":"+count;
+	}
+	
+	public boolean equals(FrequentPattern fp){
+		ArrayList<Integer> itemset = fp.getFrequentPattern();
+		if((itemset.size())!=(pattern.size())) {
+            return false;
+        }
+		
+		boolean found;
+        for(int i=0;i<itemset.size();i++){
+        	found = false;
+        	for(int j=0;j<pattern.size();j++){
+	            if(itemset.get(i) == pattern.get(j)) {
+	                found = true;
+	            }
+        	}
+        	
+        	if(!found){
+        		return false;
+        	}
+        }
+        return true;
 	}
 }
 
@@ -85,41 +114,59 @@ public class FPgrowth {
 	
 	public static double minMiniSup;
 	public static double maxMiniSup;
-	public static double miniConf;
+	public static double minMiniConf;
+	public static double maxMiniConf;
+	public static double delta;
+	public static char option;
 	public static String DB;
 	public static double MaxMemory;
 
 	public static void main(String[] args) throws IOException {
 		int numTran = 0;
-		int MSC;
-		double minSup;
-		int times;
 		long startTime;
 		long endTime;
 		long totalTime;
 		int numFP;
 		int numRule;
-		BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_result.csv"));
+		double current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+		BufferedWriter bw;
+		ArrayList<Double> cacheExp = new ArrayList<Double>();
 		
 		// Parameter setting
-		if(args.length == 0){
+		if(!cmdParser(args)){
 			System.out.println("Please enter your parameter.");
 			System.exit(0);
 		}else{
-			minMiniSup = Double.parseDouble(args[0]);
-			maxMiniSup = Double.parseDouble(args[1]);
-			miniConf = Double.parseDouble(args[2]);
-			DB = args[3];
+			double min;
+			double max;
+			switch(option){
+			case 'c':
+				min = minMiniConf;
+				max = maxMiniConf;
+				break;
+			case 's':
+				min = minMiniSup;
+				max = maxMiniSup;
+				break;
+			default:
+				
+				break;
+			}
+			
+			while(min <= max){
+				cacheExp.add(min);
+				min += delta;
+			}
 		}
-		
+		bw = new BufferedWriter(new FileWriter("exp/"+DB+"_result.csv"));
 		bw.write("Minimum Support,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
 		bw.newLine();
-		times = (int) (maxMiniSup/minMiniSup);
 		
-		while(times > 0){
-			times--;
+		int MSC;
+		for(double minValue:cacheExp){
 			numFP = 0;
 			numRule = 0;
+			MaxMemory = current_memory;
 			
 			//data structure initialization
 			HashMap<Integer, Integer> L1 = new HashMap<Integer,Integer>();
@@ -130,32 +177,83 @@ public class FPgrowth {
 			startTime = System.currentTimeMillis();
 			
 			numTran = genL1(L1);
-			minSup = numTran*0.1/100.0;
-			System.out.println(minSup);
-			MSC = (int) minSup*times;
+			if(minMiniSup != maxMiniSup){
+				MSC = (int) ((double)numTran*minValue/100.0);
+			}else{
+				MSC = (int) ((double)numTran*minMiniSup/100.0);
+			}
+			
+			System.out.println("Minimum Support Count:"+MSC);
 			
 			FPtree = new Tree(MSC);
 			FPtree.genFList(L1);
 			
 			constructFPtree(FPtree);
 			
+			current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+			if(current_memory>MaxMemory)
+				MaxMemory = current_memory;
+			
 			//FPtree.traverseTree();
 			
 			FPtree.growth(fPatterns);
 			
-			saveFrequentPattern(fPatterns);
+			current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+			if(current_memory>MaxMemory)
+				MaxMemory = current_memory;
+			
+			//saveFrequentPattern(fPatterns);
 			numFP = fPatterns.size();
 			
 			numRule = genRule(fPatterns,MSC);
 			
+			current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+			if(current_memory>MaxMemory)
+				MaxMemory = current_memory;
+			
 			endTime = System.currentTimeMillis();
 			totalTime = (endTime - startTime)/1000;
 			bw.write(minSup+","+numFP+","+numRule+","+totalTime+","+MaxMemory);
-			bw.newLine();
-			
+			bw.newLine();	
 		}
-		
 		bw.close();
+		System.out.println("Mission Completed!");
+	}
+	
+	public static boolean cmdParser(String[] args){
+		boolean pass = true;
+		Options options = new Options();
+		options.addOption("fs", true, "[Test Start Support(%)]");
+		options.addOption("ts", true, "[Test End Support(%)]");
+		options.addOption("fc", true, "[Test Start Confidence(%)]");
+		options.addOption("tc", true, "[Test End Confidence(%)]");
+		options.addOption("d", true, "[Delta Support(%)]");
+		options.addOption("o", true, "[Option]c or s");
+		options.addOption("db", true, "[Database Path]");
+		
+		CommandLineParser parser = new BasicParser();
+		try {
+			CommandLine cmd = parser.parse( options, args);
+			
+			if(cmd.hasOption("f") && cmd.hasOption("t")&& cmd.hasOption("d")&& cmd.hasOption("c")&& cmd.hasOption("db")){
+				minMiniSup = Double.parseDouble(cmd.getOptionValue("fs"));
+				maxMiniSup = Double.parseDouble(cmd.getOptionValue("ts"));
+				minMiniConf = Double.parseDouble(cmd.getOptionValue("fc"));
+				maxMiniConf = Double.parseDouble(cmd.getOptionValue("tc"));
+				delta = Double.parseDouble(cmd.getOptionValue("d"));
+				option = cmd.getOptionValue("o").charAt(0);
+				DB = cmd.getOptionValue("db");
+				
+				System.out.println("-f "+minMiniSup+" -t "+maxMiniSup+" -d "+deltaSup+" -c "+miniConf+" -db "+DB);
+			}else{
+				pass = false;
+			}
+		} catch (org.apache.commons.cli.ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return pass;
 	}
 	
 	public static int genL1(HashMap<Integer,Integer> L1){
@@ -167,7 +265,7 @@ public class FPgrowth {
 			String trans;
 			String[] items;
 			
-			br = new BufferedReader(new FileReader("Dataset\\" + DB));
+			br = new BufferedReader(new FileReader("Dataset/" + DB));
 			
 			while((trans = br.readLine())!= null){
 				numTran++;
@@ -237,7 +335,7 @@ public class FPgrowth {
 			String trans;
 			String[] items;
 			
-			br = new BufferedReader(new FileReader("Dataset//" + DB));
+			br = new BufferedReader(new FileReader("Dataset/" + DB));
 			
 			while((trans = br.readLine())!= null){
 				items = trans.split(",");
@@ -251,6 +349,8 @@ public class FPgrowth {
 				
 				itemset.clear();
 			}
+			
+			br.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -268,7 +368,7 @@ public class FPgrowth {
 		}
 	}
 	
-	public static int genRule(HashMap<String,Integer> fPatterns, int minSup){
+	public static int genRule(HashMap<String,Integer> fPatterns, int minSup, double miniConf){
 		int numRule = 0;
 		double LHSCount = 0;
 		double count;
@@ -278,7 +378,7 @@ public class FPgrowth {
 		ArrayList<Integer> RHS = new ArrayList<Integer>();
 		
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(DB+"_"+minSup+"_rule.txt"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter("exp/"+DB+"_s"+minSup+"_c"+"_rule.txt"));
 			Iterator<Entry<String, Integer>> it = fPatterns.entrySet().iterator();
 			while (it.hasNext()) {
 		        Map.Entry<String,Integer> fp = (Map.Entry<String,Integer>)it.next();
@@ -317,13 +417,13 @@ public class FPgrowth {
 		                	RHS.add(itemset.get(j));
 		                }
 		            }
-		            System.out.println(LHS.toString());
+		         
 		            LHSCount = fPatterns.get(LHS.toString());
 		            confidence = count/LHSCount;
 		            
 		            if(confidence >= miniConf && LHS.size() < itemset.size()){
 		            	numRule++;
-		            	System.out.println(LHS.toString()+"->"+RHS.toString());
+		            	//System.out.println(LHS.toString()+"->"+RHS.toString());
 						bw.write(LHS.toString()+"->"+RHS.toString());
 						bw.newLine();    			
 		            }
