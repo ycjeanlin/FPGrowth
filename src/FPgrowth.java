@@ -137,8 +137,8 @@ public class FPgrowth {
 			System.out.println("Please enter your parameter.");
 			System.exit(0);
 		}else{
-			double min;
-			double max;
+			double min = 0;
+			double max = 0;
 			switch(option){
 			case 'c':
 				min = minMiniConf;
@@ -158,7 +158,7 @@ public class FPgrowth {
 				min += delta;
 			}
 		}
-		bw = new BufferedWriter(new FileWriter("exp/"+DB+"_result.csv"));
+		bw = new BufferedWriter(new FileWriter("exp/"+DB+"_"+option+"_result.csv"));
 		bw.write("Minimum Support,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
 		bw.newLine();
 		
@@ -205,7 +205,12 @@ public class FPgrowth {
 			//saveFrequentPattern(fPatterns);
 			numFP = fPatterns.size();
 			
-			numRule = genRule(fPatterns,MSC);
+			if(minMiniConf == maxMiniConf){
+				numRule = genRule(fPatterns,MSC,minMiniConf);
+			}else{
+				numRule = genRule(fPatterns,MSC,minValue);
+			}
+			
 			
 			current_memory = ( (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
 			if(current_memory>MaxMemory)
@@ -213,7 +218,7 @@ public class FPgrowth {
 			
 			endTime = System.currentTimeMillis();
 			totalTime = (endTime - startTime)/1000;
-			bw.write(minSup+","+numFP+","+numRule+","+totalTime+","+MaxMemory);
+			bw.write(minValue+","+numFP+","+numRule+","+totalTime+","+MaxMemory);
 			bw.newLine();	
 		}
 		bw.close();
@@ -244,7 +249,13 @@ public class FPgrowth {
 				option = cmd.getOptionValue("o").charAt(0);
 				DB = cmd.getOptionValue("db");
 				
-				System.out.println("-f "+minMiniSup+" -t "+maxMiniSup+" -d "+deltaSup+" -c "+miniConf+" -db "+DB);
+				System.out.println(	 "-fs "+minMiniSup
+									+" -ts "+maxMiniSup
+									+" -fc "+minMiniConf
+									+" -tc "+maxMiniConf
+									+" -d "+delta
+									+" -o "+option
+									+" -db "+DB);
 			}else{
 				pass = false;
 			}
@@ -368,7 +379,7 @@ public class FPgrowth {
 		}
 	}
 	
-	public static int genRule(HashMap<String,Integer> fPatterns, int minSup, double miniConf){
+	public static int genRule(HashMap<String,Integer> fPatterns, int minSup, double minConf){
 		int numRule = 0;
 		double LHSCount = 0;
 		double count;
@@ -378,7 +389,7 @@ public class FPgrowth {
 		ArrayList<Integer> RHS = new ArrayList<Integer>();
 		
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter("exp/"+DB+"_s"+minSup+"_c"+"_rule.txt"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter("exp/"+DB+"_s"+minSup+"_c"+minConf+"_rule.txt"));
 			Iterator<Entry<String, Integer>> it = fPatterns.entrySet().iterator();
 			while (it.hasNext()) {
 		        Map.Entry<String,Integer> fp = (Map.Entry<String,Integer>)it.next();
@@ -421,7 +432,7 @@ public class FPgrowth {
 		            LHSCount = fPatterns.get(LHS.toString());
 		            confidence = count/LHSCount;
 		            
-		            if(confidence >= miniConf && LHS.size() < itemset.size()){
+		            if(confidence >= (minConf/100.0) && LHS.size() < itemset.size()){
 		            	numRule++;
 		            	//System.out.println(LHS.toString()+"->"+RHS.toString());
 						bw.write(LHS.toString()+"->"+RHS.toString());
