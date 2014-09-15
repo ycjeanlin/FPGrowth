@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -159,7 +158,7 @@ public class FPgrowth {
 			}
 		}
 		bw = new BufferedWriter(new FileWriter("exp/"+DB+"_"+option+"_result.csv"));
-		bw.write("Minimum Support,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
+		bw.write("Minimum Support/Confidence,# of Frequent Patterns,# of Rules,Total Time,Maximum Memory");
 		bw.newLine();
 		
 		int MSC;
@@ -178,9 +177,9 @@ public class FPgrowth {
 			
 			numTran = genL1(L1);
 			if(minMiniSup != maxMiniSup){
-				MSC = (int) ((double)numTran*minValue/100.0);
+				MSC = (int)Math.ceil(((double)numTran*minValue/100.0));
 			}else{
-				MSC = (int) ((double)numTran*minMiniSup/100.0);
+				MSC = (int)Math.ceil(((double)numTran*minMiniSup/100.0));
 			}
 			
 			System.out.println("Minimum Support Count:"+MSC);
@@ -202,6 +201,7 @@ public class FPgrowth {
 			if(current_memory>MaxMemory)
 				MaxMemory = current_memory;
 			
+
 			//saveFrequentPattern(fPatterns);
 			numFP = fPatterns.size();
 			
@@ -219,7 +219,8 @@ public class FPgrowth {
 			endTime = System.currentTimeMillis();
 			totalTime = (endTime - startTime)/1000;
 			bw.write(minValue+","+numFP+","+numRule+","+totalTime+","+MaxMemory);
-			bw.newLine();	
+			bw.newLine();
+			System.gc();
 		}
 		bw.close();
 		System.out.println("Mission Completed!");
@@ -240,7 +241,10 @@ public class FPgrowth {
 		try {
 			CommandLine cmd = parser.parse( options, args);
 			
-			if(cmd.hasOption("f") && cmd.hasOption("t")&& cmd.hasOption("d")&& cmd.hasOption("c")&& cmd.hasOption("db")){
+			if(	cmd.hasOption("fs") && cmd.hasOption("ts") 
+				&& cmd.hasOption("d")&& cmd.hasOption("o")
+				&& cmd.hasOption("fc") && cmd.hasOption("tc") 
+				&& cmd.hasOption("db")){
 				minMiniSup = Double.parseDouble(cmd.getOptionValue("fs"));
 				maxMiniSup = Double.parseDouble(cmd.getOptionValue("ts"));
 				minMiniConf = Double.parseDouble(cmd.getOptionValue("fc"));
