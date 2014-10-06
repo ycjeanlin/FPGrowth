@@ -10,4 +10,4 @@ FPGrowth
     -d the change rate of support or confidence(%)
     -o choose the parameter you want to apply the change rate, 's' for support and 'c' for confidence
     -db the input database file
-3. the output will be stored in exp directory
+3. The output will be stored in exp directory
