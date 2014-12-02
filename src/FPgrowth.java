@@ -1,3 +1,7 @@
+/*
+ * Execution: -fs 0.1 -ts 0.5 -fc 50 -tc 50 -d 0.1 -o s -db D100kT10N1k.txt
+ */
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
